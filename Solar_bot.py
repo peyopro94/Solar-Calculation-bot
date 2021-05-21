@@ -1,9 +1,11 @@
+from telegram.base import TO
 from telegram.ext import Updater, CommandHandler, ConversationHandler, MessageHandler, Filters
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 import telegram
 import logging
 import os
 import math
+import sys
 #Importar ficheros locales
 from Calculo_Solar import NASA, pot_sistema, vol_sis, perdidas, n_panles
 
@@ -274,8 +276,19 @@ def main():
 
         fallbacks=[MessageHandler(Filters.command, cancel)],
     ))
-    updater.start_polling()
-    updater.idle()
+    mode=os.getenv("MODE")
+    if mode == "dev":
+        updater.start_polling()
+        updater.idle()
+    if mode=="prod":
+        #Acceso a Heroku
+        PORT= int(os.environ.get("PORT","8843"))
+        HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
+        updater.start_webhook(listen='0.0.0.0',port=PORT, url_path=TOKEN)
+        updater.bot.set_webhook(f'https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}')
+    else:
+        logger.info('No se espicifico MODE.')
+        sys.exit()
 
 if __name__=='__main__':
     main()
